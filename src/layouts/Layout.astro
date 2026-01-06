@@ -34,12 +34,19 @@
       Arial, sans-serif;
     height: 100%;
   }
-  /* // puse un paddding-top de 60px por qu ela cague nunca hice el HEADER EN FIXED  */
+  /* Padding top responsive para el header */
   html{
     color: white;
     background: var(--color_primary);
-    padding-top: 60px;
+    padding-top: 120px; /* Móvil: header + búsqueda */
   }
+  
+  @media (min-width: 640px) {
+    html {
+      padding-top: 80px; /* Tablet y desktop: header en una línea */
+    }
+  }
+  
   @utility mask-fade-buttom () {
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.3),);
   }

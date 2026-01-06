@@ -5,12 +5,12 @@ export function Footer() {
   return (
     <div
       id="footer"
-      className={` h-48 flex justify-center items-center flex-col mt-7${
-        isActive ? " ml-[260px]" : "  ml-36 flex flex-col"
+      className={`h-auto min-h-48 flex justify-center items-center flex-col mt-7 px-4 py-8 transition-all duration-300${
+        isActive ? " ml-0 md:ml-[260px]" : " ml-0 md:ml-36"
       }`}
     >
-      <div className="opacity-80">
-        <h1 className=" font-semibold">
+      <div className="opacity-80 text-center max-w-2xl">
+        <h1 className="font-semibold text-sm sm:text-base">
           Hecho con gran motivación 🩷 Gracias a la academia de{" "}
           <a
             href="https://midu.dev"

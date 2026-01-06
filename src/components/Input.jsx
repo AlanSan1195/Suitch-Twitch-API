@@ -86,16 +86,16 @@ export function Input() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <form className="flex gap-x-2" onSubmit={handleSubmit}>
         <div className="relative flex-1">
           <input
             ref={inputRef}
             onChange={handleChange}
             onFocus={handleFocus}
-            className="w-full border-2 border-zinc-700 bg-zinc-800/50 text-white px-3 py-2 rounded-md focus:outline-none focus:border-rose focus:ring-1 focus:ring-rose transition-all"
+            className="w-full border-2 border-zinc-700 bg-zinc-800/50 text-white px-3 py-2 text-sm rounded-md focus:outline-none focus:border-rose focus:ring-1 focus:ring-rose transition-all placeholder:text-gray-500"
             value={search}
-            placeholder="Buscar streamer, categoría o juego..."
+            placeholder="Buscar streamer..."
             autoComplete="off"
           />
           {search && (
@@ -125,9 +125,24 @@ export function Input() {
         <button
           type="submit"
           disabled={!!error || !search}
-          className="bg-rose shadow-md rounded-md px-4 py-2 text-sm font-semibold items-center hover:scale-105 opacity-80 hover:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hidden md:flex transition-all"
+          className="bg-rose shadow-md rounded-md px-3 sm:px-4 py-2 text-sm font-semibold flex items-center justify-center hover:scale-105 opacity-80 hover:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all min-w-[70px] sm:min-w-[80px]"
         >
-          Buscar
+          <span className="hidden sm:inline">Buscar</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="sm:hidden"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
         </button>
       </form>
 
@@ -185,7 +200,9 @@ export function Input() {
                   <img
                     src={stream.profile_image_url || `https://unavatar.io/${stream.login}`}
                     alt={stream.display_name}
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-full bg-zinc-700"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">

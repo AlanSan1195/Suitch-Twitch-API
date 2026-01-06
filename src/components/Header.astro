@@ -6,28 +6,37 @@ import { TooltipLogout } from "./Tooltip";
 ---
 
 <header
-  class="fixed top-0 left-0 z-10 w-full shadow-black/40 flex justify-between bg-primary shadow-xl px-7 py-4"
+  class="fixed top-0 left-0 z-50 w-full shadow-black/40 flex flex-wrap md:flex-nowrap justify-between items-center bg-primary shadow-xl px-4 md:px-7 py-3 md:py-4 gap-3"
 >
-  <a href="/" class="flex items-center gap-x-2 hover:cursor-pointer">
-    <div class="bg-rose rounded-md size-5"></div>
-    <h1 class="text-white font-bold text-xl">Suitch</h1>
+  <a href="/" class="flex items-center gap-x-2 hover:cursor-pointer shrink-0">
+    <div class="bg-rose rounded-md size-5 md:size-6"></div>
+    <h1 class="text-white font-bold text-lg md:text-xl">Suitch</h1>
   </a>
-  <Input client:visible />
+  
+  <!-- Búsqueda - oculta en móvil pequeño, mostrada en tablet+ -->
+  <div class="hidden sm:block flex-1 max-w-2xl mx-4">
+    <Input client:visible />
+  </div>
+  
+  <!-- Búsqueda móvil - se muestra debajo en pantallas pequeñas -->
+  <div class="sm:hidden w-full order-last">
+    <Input client:visible />
+  </div>
 
-  <div class="flex gap-x-2 items-center justify-center">
+  <div class="flex gap-x-2 items-center justify-center shrink-0">
     {
       session ? (
         <div class="flex items-center gap-x-2">
           <img
             src={session.user?.image}
             alt={session.user?.name}
-            class="w-8 h-8 rounded-full"
+            class="w-7 h-7 md:w-8 md:h-8 rounded-full"
           />
           <form action="/api/auth/signout" method="post">
             <button
               id="logout"
               type="submit"
-              class="bg-pink-400 flex rounded-md p-1 text-sm font-semibold text-white hover:bg-rose transition-colors  group"
+              class="bg-pink-400 flex rounded-md p-1.5 md:p-2 text-xs md:text-sm font-semibold text-white hover:bg-rose transition-colors group"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -58,9 +67,10 @@ import { TooltipLogout } from "./Tooltip";
           <button
             id="login"
             type="submit"
-            class=" rounded-md p-1 text-sm font-semibold text-white  bg-pink-400 transition-colors hover:bg-rose px-2"
+            class="rounded-md p-1.5 md:p-2 text-xs md:text-sm font-semibold text-white bg-pink-400 transition-colors hover:bg-rose px-3 md:px-4 whitespace-nowrap"
           >
-            Login with Twitch
+            <span class="hidden sm:inline">Login with Twitch</span>
+            <span class="sm:hidden">Login</span>
           </button>
         </form>
       )

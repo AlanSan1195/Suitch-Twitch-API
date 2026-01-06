@@ -12,6 +12,7 @@ export function RecommendedChannels() {
   const [yourFollows, setYourFollows] = useState([]);
   const [liveFollows, setLiveFollows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     async function getStreamData() {
@@ -46,6 +47,10 @@ export function RecommendedChannels() {
     setIsShowing(!isShowing);
   }
 
+  function toggleMobileMenu() {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  }
+
   // Verificar si un follow está en vivo
   const isFollowLive = (username) => {
     return liveFollows.some(
@@ -57,9 +62,12 @@ export function RecommendedChannels() {
    
     <div
       id="recomended"
-      className={`  h-screen bg-primary fixed inset-0  top-20 border-r-[2px] border-black shadow-sm shadow-white/10  text-xs flex flex-col   ${
-        isActive ? "w-60" : "w-20"
-      } `}
+      className={`h-screen bg-primary fixed inset-0 border-r-[2px] border-black shadow-sm shadow-white/10 text-xs flex flex-col transition-all duration-300 ease-in-out z-40
+        ${isActive ? "w-60" : "w-20"}
+        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+        md:translate-x-0
+      `}
+      style={{ top: 'var(--header-height, 80px)' }}
     >
       {/* //RECOMEND CHANNELS */}
       <div id="svg"
@@ -125,9 +133,11 @@ export function RecommendedChannels() {
                   className="flex items-center w-full"
                 >
                   <img
-                    className="size-10 rounded-full flex-shrink-0"
+                    className="size-10 rounded-full flex-shrink-0 bg-zinc-700"
                     src={stream.profile_image_url}
                     alt={stream.user_name}
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div
                     className={`${
@@ -181,9 +191,11 @@ export function RecommendedChannels() {
                     className="flex items-center w-full"
                   >
                     <img
-                      className="size-10 rounded-full flex-shrink-0"
+                      className="size-10 rounded-full flex-shrink-0 bg-zinc-700"
                       src={follow.profile_image_url}
                       alt={follow.broadcaster_login || follow.login}
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div
                       className={`${
@@ -212,6 +224,37 @@ export function RecommendedChannels() {
             })}
           </div>
         </>
+      )}
+      
+      {/* Botón flotante para móvil */}
+      <button
+        onClick={toggleMobileMenu}
+        className="md:hidden fixed bottom-6 right-6 z-50 bg-rose text-white p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
+        aria-label="Toggle menu"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      
+      {/* Overlay para cerrar el menú en móvil */}
+      {isMobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-30 top-20"
+          onClick={toggleMobileMenu}
+        ></div>
       )}
     </div>
   );
