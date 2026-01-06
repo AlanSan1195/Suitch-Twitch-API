@@ -1,41 +1,49 @@
-import { url, CLIENT_ID, TOKEN_API, urlStreamer } from "../services/apiTwitch";
+import { 
+  getStreams, 
+  getUsers, 
+  getChannels, 
+  getStreamsFromUsers 
+} from "../services/apiTwitch";
 
+// Obtener streams recomendados en vivo con imágenes de perfil
 export async function awaitStream() {
-  const headers = {
-    "Client-ID": CLIENT_ID,
-    Authorization: `Bearer ${TOKEN_API}`,
-  };
   try {
-    const respuesta = await fetch(url, {
-      headers,
+    const result = await getStreams(20, "es");
+    
+    if (result.error) {
+      console.error("Error al obtener streams:", result.error);
+      return [];
+    }
+    
+    // Obtener información de usuarios para tener profile_image_url
+    const userLogins = result.data.map(stream => stream.user_login);
+    const usersResult = await getUsers(userLogins);
+    
+    if (usersResult.error) {
+      console.error("Error al obtener usuarios:", usersResult.error);
+      return result.data; // Devolver streams sin imágenes si falla
+    }
+    
+    // Combinar streams con información de usuarios (profile_image_url)
+    const streamsWithProfiles = result.data.map(stream => {
+      const userInfo = usersResult.data.find(
+        user => user.login.toLowerCase() === stream.user_login.toLowerCase()
+      );
+      return {
+        ...stream,
+        profile_image_url: userInfo?.profile_image_url || ""
+      };
     });
-    const info = await respuesta.json();
-    // cambie la forma de tener un ide en aleatorio
-    let idUser =
-      info.data[Math.floor(Math.random() * info.data.length)].user_id;
-
-    const infoStream = info.data;
-
-    return infoStream || [];
+    
+    return streamsWithProfiles;
   } catch (error) {
-    console.log("error");
-
+    console.error("Error en awaitStream:", error);
     return [];
   }
 }
 
+// Obtener información completa de tus streamers favoritos
 export async function awaitYourFollows() {
-  const headers = {
-    "Client-ID": CLIENT_ID,
-    Authorization: `Bearer ${TOKEN_API}`,
-  };
-
-  // Verificar que las cabeceras estén configuradas correctamente
-  if (!CLIENT_ID || !TOKEN_API) {
-    console.error("CLIENT_ID o TOKEN_API no están configurados correctamente.");
-    return [];
-  }
-
   const favoriteStreams = [
     "GoncyPozzo",
     "illojuan",
@@ -47,52 +55,63 @@ export async function awaitYourFollows() {
     "MoureDev",
   ];
 
-  // Crear el query string para los nombres de los usuarios
-  const loginQuery = favoriteStreams.map(user => `login=${user}`).join("&");
-  const urlFavorites = `https://api.twitch.tv/helix/users?${loginQuery}`;
-
   try {
-    const respuesta = await fetch(urlFavorites, { headers });
-
-    if (!respuesta.ok) {
-      console.error(`Error: ${respuesta.status} - ${respuesta.statusText}`);
-      const errorDetails = await respuesta.json();
-      console.error("Detalles del error:", errorDetails);
+    // Obtener información básica de los usuarios
+    const usersResult = await getUsers(favoriteStreams);
+    
+    if (usersResult.error || !usersResult.data.length) {
+      console.error("Error al obtener usuarios:", usersResult.error);
       return [];
     }
 
-    // Obtener los datos de los streamers
-    const info = await respuesta.json();
-    const userIds = info.data.map(user => user.id);
+    const users = usersResult.data;
+    const userIds = users.map(user => user.id);
 
-    // Hacer fetch para todos los streamers en paralelo
-    const respuestasCompletas = await Promise.all(
-      userIds.map(id =>
-        fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${id}`, {
-          headers,
-        })
-      )
-    );
+    // Obtener información de los canales
+    const channelsResult = await getChannels(userIds);
+    
+    if (channelsResult.error) {
+      console.error("Error al obtener canales:", channelsResult.error);
+      return users; // Devolver al menos la info básica de usuarios
+    }
 
-    // Convertir todas las respuestas a JSON
-    const jsonRespuestas = await Promise.all(
-      respuestasCompletas.map(res => res.json())
-    );
-
-    // Combinar la información de usuario con la de canales
-    const fullData = info.data.map((user, index) => {
-      const channelData = jsonRespuestas[index]?.data?.[0] || {}; // Evitar errores si la respuesta está vacía
-      return {
-        ...user,
-        ...channelData,
-      };
-    });
+    // Combinar información de usuarios con canales
+    const fullData = users.map((user, index) => ({
+      ...user,
+      ...(channelsResult.data[index] || {}),
+    }));
 
     return fullData;
   } catch (error) {
-    console.error("Error en la solicitud:", error);
+    console.error("Error en awaitYourFollows:", error);
     return [];
   }
 }
 
-// perfiles
+// Nueva función: Obtener streams en vivo de tus favoritos
+export async function awaitYourFollowsLive() {
+  const favoriteStreams = [
+    "GoncyPozzo",
+    "illojuan",
+    "ManzDev",
+    "ibai",
+    "Theo",
+    "NateGentile7",
+    "Midudev",
+    "MoureDev",
+  ];
+
+  try {
+    const result = await getStreamsFromUsers(favoriteStreams);
+    
+    if (result.error) {
+      console.error("Error al obtener streams de favoritos:", result.error);
+      return [];
+    }
+    
+    return result.data;
+  } catch (error) {
+    console.error("Error en awaitYourFollowsLive:", error);
+    return [];
+  }
+}
