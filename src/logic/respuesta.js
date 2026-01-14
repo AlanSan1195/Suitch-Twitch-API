@@ -53,6 +53,7 @@ export async function awaitYourFollows() {
     "NateGentile7",
     "Midudev",
     "MoureDev",
+    "Rubius"
   ];
 
   try {
