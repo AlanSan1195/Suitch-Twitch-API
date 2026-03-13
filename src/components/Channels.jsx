@@ -1,222 +1,247 @@
 import { useEffect, useState } from "react";
-//Variables de entorno
 import { awaitStream, awaitYourFollows } from "../logic/respuesta";
 import { Showmore } from "./Showmore";
 import { useInitialContext } from "./SanstreamLyout";
 
+/* Skeleton de una card */
+function CardSkeleton() {
+  return (
+    <div className="flex flex-col w-full rounded-xl overflow-hidden bg-white/4 animate-pulse border border-white/[0.03]">
+      <div className="w-full aspect-video bg-white/8" />
+      <div className="p-3 flex gap-2.5">
+        <div className="size-10 rounded-full bg-white/8 flex-shrink-0" />
+        <div className="flex-1 flex flex-col gap-2 pt-0.5">
+          <div className="h-2.5 bg-white/8 rounded w-4/5" />
+          <div className="h-2 bg-white/5 rounded w-1/2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LivesChannels() {
-  const { context: isActive, setContext: setIsActive } = useInitialContext();
+  const { context: isActive } = useInitialContext();
   const [showMore, setShowMore] = useState(false);
-  const [isShow, setIsShow] = useState(false);
   const [streamer, setStreamer] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function getStream() {
       const data = await awaitStream();
       setStreamer(data);
+      setLoading(false);
     }
     getStream();
   }, []);
-  function show() {
-    setShowMore(!showMore);
-    setIsShow(!isShow);
-  }
 
   return (
     <div
-      id="live-channels"
-      className={`px-3 sm:px-6 md:px-10 flex flex-col h-auto w-auto transition-all duration-300 ${
-        isActive ? "ml-0 md:ml-64" : "ml-0 md:ml-20"
+      className={`px-4 sm:px-6 md:px-8 flex flex-col transition-all duration-300 ${
+        isActive ? "md:ml-60" : "md:ml-[72px]"
       }`}
     >
+      {/* Cabecera de sección */}
+      <div className="flex items-center gap-3 mt-8 mb-4">
+        <div className="size-2 bg-red-500 rounded-full animate-pulse" />
+        <h2 className="font-bold text-lg text-white/90 tracking-tight">
+          Canales en{" "}
+          <span className="text-rose">vivo</span>
+        </h2>
+        {!loading && (
+          <span className="text-xs text-white/30 font-medium bg-white/5 px-2 py-0.5 rounded-full">
+            {streamer.length} streams
+          </span>
+        )}
+      </div>
+
       <section
-        className={` overflow-y-hidden flex flex-col  ${
-          showMore ? "min-h-fit" : "max-h-[420px]"
+        className={`overflow-hidden transition-all duration-500 ${
+          showMore ? "max-h-none" : "max-h-[480px]"
         }`}
       >
-        <div className="flex mx-1 sm:mx-3 mt-4 ">
-          <p className="font-semibold text-base sm:text-lg md:text-xl opacity-85">
-            <span className="font-semibold text-cyan-600  ">
-              Live channels{" "}
-            </span>
-            we think you’ll like
-          </p>
-        </div>
-
         <div
-          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${
-            isActive ? "xl:grid-cols-3 2xl:grid-cols-4" : "xl:grid-cols-4 2xl:grid-cols-5"
-          } gap-3 md:gap-4 overflow-y-hidden my-2 p-1 sm:p-2 ${
-            showMore ? "min-h-fit" : "max-h-[500px]"
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${
+            isActive
+              ? "xl:grid-cols-3 2xl:grid-cols-4"
+              : "xl:grid-cols-4 2xl:grid-cols-5"
           }`}
         >
-          {streamer.map((stream) => (
-            <div
-              className="p-2 bg-secundary bg-zinc-600/10 flex flex-col w-full h-auto border-2 border-[#232323] rounded-lg shadow-sm shadow-white/10 hover:translate-x-1 hover:-translate-y-1 md:hover:translate-x-2 md:hover:-translate-y-2 hover:bg-rose hover:border-rose transition-all duration-150"
-              key={stream.id}
-            >
-              <a href={`/perfiles/${stream.user_name}`} className="block">
-                <div className="relative w-full aspect-video rounded-md overflow-hidden bg-zinc-800">
-                  <img
-                    className="w-full h-full object-cover cursor-pointer"
-                    src={stream.thumbnail_url.replace(
-                      "{width}x{height}",
-                      "440x248"
-                    )}
-                    alt={stream.title}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                    <div className="size-1.5 bg-white rounded-full animate-pulse"></div>
-                    LIVE
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+            : streamer.map((stream) => (
+                <a
+                  href={`/perfiles/${stream.user_name}`}
+                  key={stream.id}
+                  className="group flex flex-col w-full rounded-xl overflow-hidden bg-secondary border border-white/[0.04] hover:border-rose/30 shadow-sm hover:shadow-rose/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                >
+                  {/* Thumbnail */}
+                  <div className="relative w-full aspect-video overflow-hidden bg-zinc-900">
+                    <img
+                      className="w-full h-full object-cover  transition-transform duration-300"
+                      src={stream.thumbnail_url.replace("{width}x{height}", "440x248")}
+                      alt={stream.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {/* LIVE badge */}
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                      <span className="size-1.5 bg-white rounded-full animate-pulse" />
+                      EN VIVO
+                    </div>
+                    {/* Viewers */}
+                    <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded">
+                      {stream.viewer_count?.toLocaleString()} viewers
+                    </div>
                   </div>
-                  <div className="absolute bottom-2 left-2 bg-black/80 text-white text-xs px-2 py-0.5 rounded">
-                    {stream.viewer_count?.toLocaleString()} viewers
+
+                  {/* Info */}
+                  <div className="flex items-start gap-2.5 px-3 pt-3 pb-2">
+                    <img
+                      src={stream.profile_image_url}
+                      className="rounded-full size-9 flex-shrink-0 bg-zinc-800 ring-1 ring-white/10"
+                      alt={stream.user_name}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="flex flex-col overflow-hidden min-w-0 flex-1 pt-0.5">
+                      <p className="font-semibold text-sm text-white/90 leading-snug line-clamp-2">
+                        {stream.title}
+                      </p>
+                      <p className="text-xs text-white/50 mt-1 truncate">{stream.user_name}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start mt-3 gap-2">
-                  <img
-                    src={stream.profile_image_url}
-                    className="rounded-full size-10 sm:size-12 flex-shrink-0 bg-zinc-700"
-                    alt={stream.user_name}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                  <div className="flex flex-col overflow-hidden min-w-0 flex-1">
-                    <p className="font-bold text-sm leading-snug line-clamp-2">
-                      {stream.title}
-                    </p>
-                    <p className="font-light opacity-70 text-xs mt-1">
-                      {stream.user_name}
-                    </p>
+
+                  <div className="flex items-center justify-between px-3 pb-3 gap-2">
+                    <p className="text-xs font-medium text-white/60 truncate">{stream.game_name}</p>
+                    <span className="text-[10px] font-semibold text-white/40 bg-white/5 border border-white/8 px-2 py-0.5 rounded shrink-0">
+                      {stream.language?.toUpperCase()}
+                    </span>
                   </div>
-                </div>
-              </a>
-              <div className="flex flex-col mt-2 gap-y-1 px-1">
-                <p className="font-semibold opacity-80 text-xs sm:text-sm truncate">{stream.game_name}</p>
-                <div className="flex items-center gap-2 text-xs opacity-70">
-                  <span className="bg-zinc-700/50 px-2 py-0.5 rounded">{stream.language?.toUpperCase()}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+                </a>
+              ))}
         </div>
       </section>
 
-      <Showmore showMore={show} isShow={isShow} />
+      <Showmore showMore={() => setShowMore(!showMore)} isShow={showMore} />
     </div>
   );
 }
 
 export function OthersChannels() {
-  const { context: isActive, setContext: setIsActive } = useInitialContext();
+  const { context: isActive } = useInitialContext();
   const [showMore, setShowMore] = useState(false);
-  const [isShow, setIsShow] = useState(false);
   const [streamer, setStreamer] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function getOtherChannels() {
       const data = await awaitYourFollows();
       setStreamer(data);
+      setLoading(false);
     }
     getOtherChannels();
   }, []);
-  function show() {
-    setShowMore(!showMore);
-    setIsShow(!isShow);
-  }
 
   return (
     <div
-      id="live-channels"
-      className={`px-3 sm:px-6 md:px-10 flex flex-col h-auto w-auto transition-all duration-300 ${
-        isActive ? "ml-0 md:ml-64" : "ml-0 md:ml-20"
+      className={`px-4 sm:px-6 md:px-8 flex flex-col transition-all duration-300 ${
+        isActive ? "md:ml-60" : "md:ml-[72px]"
       }`}
     >
-      {/* esto es un componente  */}
+      {/* Cabecera de sección */}
+      <div className="flex items-center gap-3 mt-6 mb-4">
+        <h2 className="font-bold text-lg text-white/90 tracking-tight">
+          <span className="text-rose">Gaming</span> y{" "}
+          <span className="text-rose">Desarrollo</span>
+        </h2>
+        {!loading && (
+          <span className="text-xs text-white/30 font-medium bg-white/5 px-2 py-0.5 rounded-full">
+            {streamer.length} canales
+          </span>
+        )}
+      </div>
 
       <section
-        className={` overflow-y-hidden flex flex-col  ${
-          showMore ? "min-h-fit" : "max-h-[420px]"
+        className={`overflow-hidden transition-all duration-500 ${
+          showMore ? "max-h-none" : "max-h-[480px]"
         }`}
       >
-        <div className="flex mx-1 sm:mx-3 mt-4 ">
-          <p className="font-semibold text-base sm:text-lg md:text-xl opacity-80 ">
-            <span className=" text-cyan-500">Gaming</span> and{" "}
-            <span className=" text-cyan-500">Development</span>
-          </p>
-        </div>
-
         <div
-          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${
-            isActive ? "xl:grid-cols-3 2xl:grid-cols-4" : "xl:grid-cols-4 2xl:grid-cols-5"
-          } gap-3 md:gap-4 overflow-y-hidden my-2 p-1 sm:p-2 ${
-            showMore ? "min-h-fit" : "max-h-[500px]"
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${
+            isActive
+              ? "xl:grid-cols-3 2xl:grid-cols-4"
+              : "xl:grid-cols-4 2xl:grid-cols-5"
           }`}
         >
-          {streamer.length > 0 ? (
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+          ) : streamer.length > 0 ? (
             streamer.map((stream) => (
-              <div
-                className="p-2 bg-secundary bg-zinc-600/10 flex flex-col w-full h-auto border-2 border-[#232323] rounded-lg shadow-sm shadow-white/10 hover:translate-x-1 hover:-translate-y-1 md:hover:translate-x-2 md:hover:-translate-y-2 hover:bg-rose hover:border-rose transition-all duration-150"
+              <a
+                href={`/perfiles/${stream.login || stream.display_name}`}
                 key={stream.id || stream.title}
+                className="group flex flex-col w-full rounded-xl overflow-hidden bg-secondary border border-white/[0.04] hover:border-rose/30 shadow-sm hover:shadow-rose/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
               >
-                <a href={`/perfiles/${stream.login || stream.display_name}`} className="block">
-                  <div className="relative w-full aspect-video rounded-md overflow-hidden bg-zinc-800">
-                    <img
-                      className="w-full h-full object-cover cursor-pointer"
-                      src={
-                        stream.offline_image_url
-                          ? stream.offline_image_url.replace("{width}x{height}", "440x248")
-                          : stream.thumbnail_url
-                      }
-                      alt={`Imagen de ${stream.display_name || stream.login}`}
-                      loading="lazy"
-                      decoding="async"
-                    />
+                {/* Thumbnail / offline image */}
+                <div className="relative w-full aspect-video overflow-hidden bg-zinc-900">
+                  <img
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    src={
+                      stream.offline_image_url
+                        ? stream.offline_image_url.replace("{width}x{height}", "440x248")
+                        : stream.thumbnail_url
+                    }
+                    alt={stream.display_name || stream.login}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+
+                {/* Info */}
+                <div className="flex items-start gap-2.5 px-3 pt-3 pb-2">
+                  <img
+                    src={stream.profile_image_url}
+                    className="rounded-full size-9 flex-shrink-0 bg-zinc-800 ring-1 ring-white/10"
+                    alt={stream.display_name || stream.login}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <div className="flex flex-col overflow-hidden min-w-0 flex-1 pt-0.5">
+                    <p className="font-semibold text-sm text-white/90 leading-snug line-clamp-2">
+                      {stream.title || stream.broadcaster_login || "Sin título"}
+                    </p>
+                    <p className="text-xs text-white/50 mt-1 truncate">
+                      {stream.display_name || stream.login}
+                    </p>
                   </div>
-                  <div className="flex items-start mt-3 gap-2">
-                    <img
-                      src={stream.profile_image_url}
-                      className="rounded-full size-10 sm:size-12 flex-shrink-0 bg-zinc-700"
-                      alt={`Perfil de ${stream.display_name || stream.login}`}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <div className="flex flex-col overflow-hidden min-w-0 flex-1">
-                      <p className="font-bold text-sm leading-snug line-clamp-2">
-                        {stream.title || stream.broadcaster_login || "Sin título"}
-                      </p>
-                      <p className="font-light opacity-70 text-xs mt-1">
-                        {stream.display_name || stream.login}
-                      </p>
-                    </div>
-                  </div>
-                </a>
-                <div className="flex flex-col mt-2 gap-y-2 px-1">
-                  <p className="font-semibold opacity-80 text-xs sm:text-sm truncate">
-                    {stream.game_name || "Sin juego"}
+                </div>
+
+                <div className="flex items-center justify-between px-3 pb-3 gap-2">
+                  <p className="text-xs font-medium text-white/60 truncate">
+                    {stream.game_name || "Sin categoría"}
                   </p>
-                  <div className="flex flex-wrap gap-1">
-                    {stream.tags?.slice(0, 3).map((tag, index) => (
+                  <div className="flex gap-1 shrink-0">
+                    {stream.tags?.slice(0, 2).map((tag, index) => (
                       <span
                         key={index}
-                        className="bg-zinc-700/50 text-white text-xs px-2 py-0.5 rounded"
+                        className="text-[10px] font-medium text-white/40 bg-white/5 border border-white/8 px-2 py-0.5 rounded"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
                 </div>
-              </div>
+              </a>
             ))
           ) : (
-            <p>Cargando canales</p>
+            <p className="text-white/40 text-sm col-span-full text-center py-8">
+              No hay canales disponibles
+            </p>
           )}
         </div>
       </section>
 
-      <Showmore showMore={show} isShow={isShow} />
+      <Showmore showMore={() => setShowMore(!showMore)} isShow={showMore} />
     </div>
   );
 }

@@ -1,53 +1,43 @@
 ---
-// import background from "../assets/background.svg";
- import { Input } from "../components/Input";
- import  Header  from "../components/Header.astro";
+import Header from "../components/Header.astro";
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-
-
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Suitch — descubre streams en vivo y canales de Twitch" />
     <title>Suitch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <Header />
-    <!-- <img id="background" src={background.src} alt="" fetchpriority="high" /> -->
     <slot />
   </body>
 </html>
 
 <style>
-
-   :root{
-
-    --color_primary: #161616;
-    --color-secundary: #ec4899;
-    --color-terciary: #1C1C1C
-   }
-
-  #container {
-    font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans",
-      Arial, sans-serif;
-    height: 100%;
+  :root {
+    --color-primary: #161616;
+    --color-secondary: #ec4899;
+    --color-tertiary: #1c1c1c;
   }
-  /* Padding top responsive para el header */
-  html{
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: white;
-    background: var(--color_primary);
-    padding-top: 120px; /* Móvil: header + búsqueda */
+    background: var(--color-primary);
+    /* Móvil: header ocupa dos líneas (logo+input) */
+    padding-top: 116px;
   }
-  
+
   @media (min-width: 640px) {
     html {
-      padding-top: 80px; /* Tablet y desktop: header en una línea */
+      /* Tablet y desktop: header en una sola línea */
+      padding-top: 72px;
     }
-  }
-  
-  @utility mask-fade-buttom () {
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.3),);
   }
 </style>

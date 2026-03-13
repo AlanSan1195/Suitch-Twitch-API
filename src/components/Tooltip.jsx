@@ -1,29 +1,35 @@
 export function TooltipLives() {
   return (
-    <div className=" bg-white text-black font-semibold  absolute  translate-x-8 rounded-md px-2 opacity-0 invisible group-hover:visible group-hover:opacity-100 duration-200 z-50">
+    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-zinc-900 border border-white/10 text-white text-xs font-medium rounded-md px-2.5 py-1.5 whitespace-nowrap opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50 shadow-xl pointer-events-none">
       Canales en vivo
+      <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-zinc-900" />
     </div>
   );
 }
+
 export function TooltipColapsar() {
   return (
-    <div className="absolute translate-x-7  bg-white text-black font-semibold rounded-md px-3 py-1 shadow-md opacity-0 invisible hover:opacity-100  group-hover:visible group-hover:opacity-100 duration-200  z-50">
-      <p>Colapsar</p>
+    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-zinc-900 border border-white/10 text-white text-xs font-medium rounded-md px-2.5 py-1.5 whitespace-nowrap opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50 shadow-xl pointer-events-none">
+      Colapsar
+      <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-zinc-900" />
     </div>
   );
 }
 
 export function TooltipExpandir() {
   return (
-    <div className="absolute right-1  bg-white text-black font-semibold rounded-md px-3  py-1 shadow-md  opacity-0 invisible group-hover:visible group-hover:opacity-100 z-50 duration-200">
-      <p className=" rotate-180">Expadir</p>
+    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-zinc-900 border border-white/10 text-white text-xs font-medium rounded-md px-2.5 py-1.5 whitespace-nowrap opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50 shadow-xl pointer-events-none">
+      Expandir
+      <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-zinc-900" />
     </div>
   );
 }
+
 export function TooltipLogout() {
   return (
-    <div className="absolute right-3  bg-white text-black font-semibold rounded-md px-3 top-20  py-1 shadow-md opacity-0 invisible group-hover:visible group-hover:opacity-100 z-50 duration-200">
-      <p className=" font-semibold text-xs">Log out</p>
+    <div className="absolute top-full mt-2 right-0 bg-zinc-900 border border-white/10 text-white text-xs font-medium rounded-md px-2.5 py-1.5 whitespace-nowrap opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50 shadow-xl pointer-events-none">
+      Cerrar sesión
+      <span className="absolute bottom-full right-3 border-4 border-transparent border-b-zinc-900" />
     </div>
   );
 }

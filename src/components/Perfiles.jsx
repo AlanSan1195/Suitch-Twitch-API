@@ -4,45 +4,29 @@ import { useInitialContext } from "./SanstreamLyout";
 
 export function PerfilUser({ user }) {
   const [streamLive, setStreamerLive] = useState(null);
-  const { context: isActive, setContext: setIsActive } = useInitialContext();
+  const { context: isActive } = useInitialContext();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const cacheRef = useRef(new Map()); // Cache para evitar peticiones repetidas
+  const cacheRef = useRef(new Map());
   const lastFetchRef = useRef(0);
   const [hostname, setHostname] = useState(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Asegurarse de que el código se ejecuta solo en el cliente
     setIsClient(true);
     if (typeof window !== "undefined") {
       setHostname(window.location.hostname);
     }
   }, []);
 
-  // Forzar re-render después de la hidratación
   useEffect(() => {
-    if (isClient && hostname) {
-      // Pequeño delay para asegurar que el DOM esté listo
-      const timer = setTimeout(() => {
-        console.log('Iframe listo para cargar con hostname:', hostname);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isClient, hostname]);
+    if (!user) return;
 
-  useEffect(() => {
-    if (!user) {
-      console.error("User is undefined");
-      return;
-    }
-
-    const streamLive = async () => {
-      // Verificar caché
+    const fetchData = async () => {
       const cacheKey = `user_${user}`;
       const now = Date.now();
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
-      
+      const CACHE_DURATION = 5 * 60 * 1000;
+
       if (cacheRef.current.has(cacheKey)) {
         const cached = cacheRef.current.get(cacheKey);
         if (now - cached.timestamp < CACHE_DURATION) {
@@ -53,206 +37,243 @@ export function PerfilUser({ user }) {
         }
       }
 
-      // Debounce: evitar peticiones muy frecuentes
-      if (now - lastFetchRef.current < 3000) { // 3 segundos mínimo
-        return;
-      }
+      if (now - lastFetchRef.current < 3000) return;
       lastFetchRef.current = now;
 
       try {
         setLoading(true);
-        
         const headers = {
           "Client-ID": CLIENT_ID,
           Authorization: `Bearer ${TOKEN_API}`,
         };
 
         if (!CLIENT_ID || !TOKEN_API) {
-          console.error("CLIENT_ID o TOKEN_API no están configurados correctamente.");
+          console.error("CLIENT_ID o TOKEN_API no están configurados.");
           return;
         }
 
-        // Hacer todas las peticiones en paralelo para reducir el tiempo total
         const [responseUser, liveStreamResponse] = await Promise.all([
           fetch(`https://api.twitch.tv/helix/users?login=${user}`, { headers }),
-          fetch(`https://api.twitch.tv/helix/streams?user_login=${user}`, { headers })
+          fetch(`https://api.twitch.tv/helix/streams?user_login=${user}`, { headers }),
         ]);
 
-        if (!responseUser.ok) {
-          throw new Error(`Error al obtener el usuario: ${responseUser.status}`);
-        }
+        if (!responseUser.ok) throw new Error(`Error al obtener el usuario: ${responseUser.status}`);
 
         const userData = await responseUser.json();
         const liveStreamData = await liveStreamResponse.json();
         const isLive = liveStreamData.data.length > 0;
-        
+
         if (userData.data.length === 0) {
-          console.error('Usuario no encontrado');
+          console.error("Usuario no encontrado");
           setLoading(false);
           return;
         }
 
         const idUser = userData.data[0].id;
 
-        // Solo hacer peticiones adicionales si es necesario
         const [dataUser, videosData] = await Promise.all([
           fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${idUser}`, { headers }),
-          fetch(`https://api.twitch.tv/helix/videos?user_id=${idUser}&type=archive&first=6`, { headers }) // Limitar a 6 videos
+          fetch(`https://api.twitch.tv/helix/videos?user_id=${idUser}&type=archive&first=6`, { headers }),
         ]);
 
         let channelInfo = {};
-        let videos = [];
+        let vods = [];
 
         if (dataUser.ok) {
           const channelData = await dataUser.json();
           channelInfo = channelData.data[0] || {};
         }
-
         if (videosData.ok) {
           const videosResponse = await videosData.json();
-          videos = videosResponse.data || [];
+          vods = videosResponse.data || [];
         }
 
         const fullData = {
           ...userData.data[0],
           ...channelInfo,
-          isLive: isLive,
-          liveViewers: isLive ? liveStreamData.data[0].viewer_count : 0
+          isLive,
+          liveViewers: isLive ? liveStreamData.data[0].viewer_count : 0,
+          liveTitle: isLive ? liveStreamData.data[0].title : null,
+          liveGame: isLive ? liveStreamData.data[0].game_name : null,
+          liveThumbnail: isLive
+            ? liveStreamData.data[0].thumbnail_url.replace("{width}x{height}", "1280x720")
+            : null,
         };
 
-        // Guardar en caché
-        cacheRef.current.set(cacheKey, {
-          data: fullData,
-          videos: videos,
-          timestamp: now
-        });
-
+        cacheRef.current.set(cacheKey, { data: fullData, videos: vods, timestamp: now });
         setStreamerLive(fullData);
-        setVideos(videos);
-        
+        setVideos(vods);
       } catch (error) {
-        console.error('Error fetching stream data:', error);
+        console.error("Error al cargar perfil:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    streamLive();
+    fetchData();
   }, [user]);
-  return (
-    <div className={`px-4 ml-20 flex flex-col h-full w-auto gap-y-4 ${isActive ? "ml-64" : "ml-20"}`}>
-      {loading ? (
-        <div className="flex justify-center items-center h-[500px]">
-          <p className="text-xl">Cargando perfil de {user}...</p>
+
+  const sidebarOffset = isActive ? "md:ml-60" : "md:ml-[72px]";
+
+  /* ── Loading state ── */
+  if (loading) {
+    return (
+      <div className={`${sidebarOffset} transition-all duration-300 px-4 sm:px-6 md:px-8`}>
+        {/* Skeleton iframe */}
+        <div className="w-full aspect-video bg-white/5 animate-pulse rounded-xl mt-6" />
+        {/* Skeleton info */}
+        <div className="flex gap-4 mt-5 animate-pulse">
+          <div className="size-20 rounded-full bg-white/8 flex-shrink-0" />
+          <div className="flex-1 flex flex-col gap-3 pt-2">
+            <div className="h-4 bg-white/8 rounded w-1/3" />
+            <div className="h-3 bg-white/5 rounded w-1/4" />
+            <div className="h-3 bg-white/5 rounded w-2/3" />
+          </div>
         </div>
-      ) : streamLive ? (
-        <>
-          {/* Mostrar estado del stream */}
-          <div className="mb-2">
-            {streamLive.isLive ? (
-              <span className="bg-red-600 text-white px-2 py-1 rounded text-sm">
-                🔴 EN VIVO - {streamLive.liveViewers} espectadores
-              </span>
-            ) : (
-              <span className="bg-gray-600 text-white px-2 py-1 rounded text-sm">
-                ⚫ DESCONECTADO
-              </span>
-            )}
+      </div>
+    );
+  }
+
+  /* ── Not found ── */
+  if (!streamLive) {
+    return (
+      <div className={`${sidebarOffset} transition-all duration-300 flex flex-col items-center justify-center min-h-[60vh] gap-4`}>
+        <div className="text-6xl opacity-30">🔍</div>
+        <p className="text-white/50 text-lg font-medium">
+          Usuario <span className="text-white/80">'{user}'</span> no encontrado
+        </p>
+      </div>
+    );
+  }
+
+  /* ── Main profile ── */
+  return (
+    <div className={`${sidebarOffset} transition-all duration-300 flex flex-col`}>
+
+      {/* ── Player / Offline banner ── */}
+      <div className="relative w-full bg-black">
+        {isClient && hostname ? (
+          <iframe
+            className="w-full aspect-video"
+            src={`https://embed.twitch.tv/?channel=${user}&parent=${hostname}&autoplay=false`}
+            allowFullScreen
+            frameBorder="0"
+            scrolling="no"
+            title={`Stream de ${user}`}
+          />
+        ) : (
+          <div className="w-full aspect-video bg-zinc-950 flex items-center justify-center">
+            <div className="animate-spin rounded-full size-10 border-2 border-rose border-t-transparent" />
           </div>
-          
-          {isClient && hostname ? (
-            <iframe
-              className="border-t-2 border-rose flex justify-center mx-auto h-[500px] w-full"
-              src={`https://embed.twitch.tv/?channel=${user}&parent=${hostname}&autoplay=true`}
-              allowFullScreen
-              frameBorder="0"
-              scrolling="no"
-            ></iframe>
+        )}
+      </div>
+
+
+      
+
+        <div className="flex items-center gap-2 mx-2 sm:mx-8 my-4">
+          {streamLive.isLive ? (
+            <span className="flex items-center gap-1.5 bg-red-600/20 border border-red-500/40 text-red-400 text-xs font-bold px-3 py-1 rounded-full">
+              <span className="size-1.5 bg-red-500 rounded-full animate-pulse" />
+              EN VIVO — {streamLive.liveViewers?.toLocaleString()} espectadores
+            </span>
           ) : (
-            <div className="border-t-2 border-rose flex justify-center mx-auto h-[500px] w-full bg-gray-800 items-center">
-              <p className="text-white">Cargando reproductor...</p>
-            </div>
+            <span className="flex items-center gap-1.5 bg-white/5 border border-white/40 text-white/40 text-xs font-medium px-3 py-1 rounded-full">
+              <span className="size-1.5 bg-white/30 rounded-full" />
+              Offline
+            </span>
           )}
+        </div>
 
-          <div className="flex flex-col gap-y-2 mx-2  ">
-            <div className="flex items-center gap-x-2  border-[2px] border-black shadow-sm shadow-white/10  rounded-md p-2">
-              <img
-                src={`${streamLive.profile_image_url || user}`}
-                alt="Avatar"
-                className=" size-20 rounded-full"
-              />
-              <div className=" flex flex-col text-pretty">
-                <h1 className="font-bold text-2xl">
-                  {streamLive.display_name || user}
-                </h1>
-                <h2 className=" text-xs">
-                  {streamLive.view_count}{" "}
-                  <span className="font-thin">Espectadores</span>
-                </h2>
-                <h2 className=" text-xs">{streamLive.description}</h2>
-              </div>
-            </div>
-
-            <p className="font-semibold">{streamLive.title || "Sin título"}</p>
-            <p className=" font-thin">
-              {streamLive.game_name || "Desconocido"}
-            </p>
-          </div>
-          <section>
-            <h2 className="text-xl font-bold mx-2">Últimos Streams</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-              {videos.length > 0 ? (
-                videos.map((video) => (
-                  <div
-                    key={video.id}
-                    className="p-1 bg-secundary  bg-zinc-600/10 flex flex-col w-auto h-auto border-2 border-[#232323]  rounded-md shadow-sm shadow-white/10 m-1 max-w-[550px] max-h-[400px] hover:translate-x-2 hover:-translate-y-2  hover:bg-rose hover:backdrop-blur-xl   transition-all duration-150 "
-                  >
-                    <a
-                      className="relative"
-                      href={video.url}
-                      rel="noopener noreferrer"
-                    >
-                      <img
-                        src={video.thumbnail_url
-                          .replace("%{width}", "320")
-                          .replace("%{height}", "180")}
-                        alt={video.title}
-                        className="w-full "
-                      />
-                      <p className="text-xs absolute  top-2 left-2 bg-black/50 text-gray-300 px-1">
-                        {video.duration}
-                      </p>
-                      <p className="text-xs absolute  bottom-2 left-2 bg-black/50 text-gray-300 px-1">
-                        {video.view_count}
-                        <span>.k vistas</span>
-                      </p>
-                    </a>
-                    <div className="p-2 ">
-                      <h1 className="text-sm font-semibold opacity-90 ">
-                        {video.title}
-                      </h1>
-
-                      <p className=" font-light text-sm opacity-70">
-                        {streamLive.display_name}
-                      </p>
-                      <p className=" font-light text-sm opacity-70">
-                        {streamLive.viewable}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p>No hay videos recientes.</p>
+        {/* Avatar + nombre + stats */}
+        <div className="flex items-start gap-4 mx-2 sm:mx-8">
+          <img
+            src={streamLive.profile_image_url}
+            alt={`Avatar de ${user}`}
+            className="size-16 sm:size-20 rounded-full ring-2 ring-rose/30 flex-shrink-0 bg-zinc-800"
+          />
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
+            <h1 className="font-bold text-xl sm:text-2xl text-white tracking-tight truncate">
+              {streamLive.display_name || user}
+            </h1>
+            <div className="flex items-center gap-3 text-xs text-white/40 font-medium flex-wrap">
+              <span>
+                {Number(streamLive.view_count).toLocaleString()}{" "}
+                <span className="font-normal">vistas totales</span>
+              </span>
+              {streamLive.broadcaster_language && (
+                <span className="bg-white/5 border border-white/40 px-2 py-0.5 rounded">
+                  {streamLive.broadcaster_language?.toUpperCase()}
+                </span>
               )}
             </div>
-          </section>
-          <hr className=" mx-2 flex-1 border-t-1 border-zinc-800 " />
-        </>
-      ) : (
-        <div className="flex justify-center items-center h-[500px]">
-          <p className="text-xl">Usuario '{user}' no encontrado</p>
+            {streamLive.description && (
+              <p className="text-xs text-white/50 leading-relaxed mt-1 line-clamp-2">
+                {streamLive.description}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Título y juego actual */}
+        {(streamLive.title || streamLive.game_name) && (
+          <div className="flex flex-col gap-1 pl-0 mx-2 sm:pl-24">
+            {streamLive.title && (
+              <p className="text-sm font-semibold text-white/80 leading-snug line-clamp-2">
+                {streamLive.title}
+              </p>
+            )}
+            {streamLive.game_name && (
+              <p className="text-xs text-rose/80 font-medium">{streamLive.game_name}</p>
+            )}
+          </div>
+      )}
+      {/* Fin de título y juego actual */}
+      {videos.length > 0 && (
+        <div className="px-4 sm:px-6 md:px-8 py-6">
+          <h2 className="font-bold text-base text-white/80 mb-4 tracking-tight">
+            Últimos streams
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {videos.map((video) => (
+              <a
+                key={video.id}
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col w-full rounded-xl overflow-hidden bg-secondary border border-white/[0.04] hover:border-rose/30 shadow-sm hover:shadow-rose/10 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+              >
+                <div className="relative w-full aspect-video overflow-hidden rounded-t-xl bg-zinc-900">
+                  <img
+                    src={video.thumbnail_url
+                      .replace("%{width}", "440")
+                      .replace("%{height}", "248")}
+                    alt={video.title}
+                    className="w-full h-full object-cover  transition-transform duration-300 ease-out"
+                    loading="lazy"
+                  />
+                  {/* Duración */}
+                  <span className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
+                    {video.duration}
+                  </span>
+                  {/* Vistas */}
+                  <span className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded">
+                    {Number(video.view_count).toLocaleString()} vistas
+                  </span>
+                </div>
+                <div className="p-3">
+                  <p className="text-xs font-semibold text-white/85 line-clamp-2 leading-snug">
+                    {video.title}
+                  </p>
+                  <p className="text-[10px] text-white/40 mt-1.5">{streamLive.display_name}</p>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
       )}
+
+      <div className="h-8" />
     </div>
   );
 }
