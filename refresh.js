@@ -17,12 +17,20 @@ async function refreshToken() {
       client_secret: clientSecret,
       grant_type: 'client_credentials'
     })
-  })
+  });
 
+  const data = await response.json();
 
-  // 2. Actualizamos el archivo .env.local
+  if (!data.access_token) {
+    console.error("No se obtuvo el token:", data);
+    return;
+  }
+
+  const newToken = data.access_token;
+  console.log("Nuevo token obtenido:", newToken.slice(0, 8) + "...");
+
+  // Actualizamos el archivo .env.local
   let envContent = fs.readFileSync('.env.local', 'utf-8');
-  // Reemplaza la línea del token
   envContent = envContent.replace(
     /TWITCH_TOKEN\s*=\s*.*/g,
     `TWITCH_TOKEN = ${newToken}`
@@ -34,10 +42,6 @@ async function refreshToken() {
   fs.writeFileSync('.env.local', envContent);
 
   console.log('Token actualizado en .env.local');
-  const data = await response.json()
-  if (!data.access_token){
-      console.log("NO obtuvimos el token")
-  }
 }
 
-
+refreshToken();
