@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { searchUser } from "../services/apiTwitch";
 
 export function useStream(search) {
   const [streams, setStreams] = useState([]);
@@ -7,7 +6,7 @@ export function useStream(search) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // No buscar si el término es vacío o muy corto
+    // No buscar si el termino es vacio o muy corto
     if (!search || search.length < 3) {
       setStreams([]);
       setError(null);
@@ -19,8 +18,9 @@ export function useStream(search) {
       setError(null);
 
       try {
-        const result = await searchUser(search);
-        
+        const response = await fetch(`/api/twitch/search?login=${encodeURIComponent(search)}`);
+        const result = await response.json();
+
         if (result.error) {
           setError(result.error);
           setStreams([]);

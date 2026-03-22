@@ -1,4 +1,3 @@
- import { navigate } from "astro/virtual-modules/transitions-router.js";
 import { useState, useEffect, useRef } from "react";
 
  

@@ -1,4 +1,3 @@
-import { CLIENT_ID, TOKEN_API } from "../services/apiTwitch";
 import { useEffect, useState, useRef } from "react";
 import { useInitialContext } from "./SanstreamLyout";
 
@@ -42,61 +41,47 @@ export function PerfilUser({ user }) {
 
       try {
         setLoading(true);
-        const headers = {
-          "Client-ID": CLIENT_ID,
-          Authorization: `Bearer ${TOKEN_API}`,
-        };
 
-        if (!CLIENT_ID || !TOKEN_API) {
-          console.error("CLIENT_ID o TOKEN_API no están configurados.");
-          return;
-        }
-
-        const [responseUser, liveStreamResponse] = await Promise.all([
-          fetch(`https://api.twitch.tv/helix/users?login=${user}`, { headers }),
-          fetch(`https://api.twitch.tv/helix/streams?user_login=${user}`, { headers }),
+        // Obtener usuario y stream en vivo en paralelo
+        const [usersRes, liveRes] = await Promise.all([
+          fetch(`/api/twitch/users?logins=${user}`),
+          fetch(`/api/twitch/streams?userLogins=${user}`),
         ]);
 
-        if (!responseUser.ok) throw new Error(`Error al obtener el usuario: ${responseUser.status}`);
+        const usersResult = await usersRes.json();
+        const liveResult = await liveRes.json();
+        const isLive = liveResult.data.length > 0;
 
-        const userData = await responseUser.json();
-        const liveStreamData = await liveStreamResponse.json();
-        const isLive = liveStreamData.data.length > 0;
-
-        if (userData.data.length === 0) {
+        if (!usersResult.data.length) {
           console.error("Usuario no encontrado");
           setLoading(false);
           return;
         }
 
-        const idUser = userData.data[0].id;
+        const userData = usersResult.data[0];
+        const idUser = userData.id;
 
-        const [dataUser, videosData] = await Promise.all([
-          fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${idUser}`, { headers }),
-          fetch(`https://api.twitch.tv/helix/videos?user_id=${idUser}&type=archive&first=6`, { headers }),
+        // Obtener canal y videos en paralelo
+        const [channelsRes, videosRes] = await Promise.all([
+          fetch(`/api/twitch/channels?ids=${idUser}`),
+          fetch(`/api/twitch/videos?userId=${idUser}&first=6`),
         ]);
 
-        let channelInfo = {};
-        let vods = [];
+        const channelsResult = await channelsRes.json();
+        const videosResult = await videosRes.json();
 
-        if (dataUser.ok) {
-          const channelData = await dataUser.json();
-          channelInfo = channelData.data[0] || {};
-        }
-        if (videosData.ok) {
-          const videosResponse = await videosData.json();
-          vods = videosResponse.data || [];
-        }
+        const channelInfo = channelsResult.data?.[0] || {};
+        const vods = videosResult.data || [];
 
         const fullData = {
-          ...userData.data[0],
+          ...userData,
           ...channelInfo,
           isLive,
-          liveViewers: isLive ? liveStreamData.data[0].viewer_count : 0,
-          liveTitle: isLive ? liveStreamData.data[0].title : null,
-          liveGame: isLive ? liveStreamData.data[0].game_name : null,
+          liveViewers: isLive ? liveResult.data[0].viewer_count : 0,
+          liveTitle: isLive ? liveResult.data[0].title : null,
+          liveGame: isLive ? liveResult.data[0].game_name : null,
           liveThumbnail: isLive
-            ? liveStreamData.data[0].thumbnail_url.replace("{width}x{height}", "1280x720")
+            ? liveResult.data[0].thumbnail_url.replace("{width}x{height}", "1280x720")
             : null,
         };
 
@@ -215,7 +200,7 @@ export function PerfilUser({ user }) {
           </div>
         </div>
 
-        {/* Título y juego actual */}
+        {/* Titulo y juego actual */}
         {(streamLive.title || streamLive.game_name) && (
           <div className="flex flex-col gap-1 pl-0 mx-2 sm:pl-24">
             {streamLive.title && (
@@ -228,7 +213,7 @@ export function PerfilUser({ user }) {
             )}
           </div>
       )}
-      {/* Fin de título y juego actual */}
+      {/* Fin de titulo y juego actual */}
       {videos.length > 0 && (
         <div className="px-4 sm:px-6 md:px-8 py-6">
           <h2 className="font-bold text-base text-white/80 mb-4 tracking-tight">
@@ -252,7 +237,7 @@ export function PerfilUser({ user }) {
                     className="w-full h-full object-cover  transition-transform duration-300 ease-out"
                     loading="lazy"
                   />
-                  {/* Duración */}
+                  {/* Duracion */}
                   <span className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
                     {video.duration}
                   </span>
